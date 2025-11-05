@@ -5,9 +5,10 @@ import path from "node:path";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const apiBase = env.VITE_API_BASE || "http://localhost:4117";
+  const basePath = env.VITE_APP_BASE || "/IZAKAYA-LITE-UI/";
   return {
     plugins: [react()],
-    base: env.VITE_APP_BASE || "./",
+    base: basePath,
     build: {
       outDir: path.resolve(__dirname, "dist"),
       emptyOutDir: true,
