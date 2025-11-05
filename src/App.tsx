@@ -399,6 +399,17 @@ const FEATURED_CARDS: CardRecord[] = [
   { id: "placeholder", name: "V2Card.PNG", kind: "placeholder", metadata: null },
 ];
 
+const CHAT_POINT_CONFIG: Record<string, { amount: number; sku: string }> = {
+  "dr-orb": { amount: 10, sku: "talk_orb" },
+  "miss-madi": { amount: 8, sku: "talk_madi" },
+};
+
+const DEFAULT_CHAT_POINT = { amount: 10, sku: "talk_generic" };
+
+function getChatPointCost(cardId: string) {
+  return CHAT_POINT_CONFIG[cardId] ?? DEFAULT_CHAT_POINT;
+}
+
 function buildRequestUrl(path: string, baseOverride?: string): string {
   if (/^https?:\/\//i.test(path)) {
     return path;
@@ -1372,6 +1383,29 @@ const App: React.FC = () => {
     }
   }, [activeUserId]);
 
+  const consumeWalletPoints = useCallback(
+    async ({ amount, sku, idempotencyKey }: { amount: number; sku: string; idempotencyKey?: string }) => {
+      const userId = activeUserId.trim();
+      if (!userId) {
+        throw new Error("ユーザーIDが未設定です");
+      }
+      const response = await fetch(buildRequestUrl("/wallet/consume"), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "X-IZK-UID": userId,
+        },
+        body: JSON.stringify({ amount, sku, idempotency_key: idempotencyKey }),
+      });
+      if (!response.ok) {
+        const message = await response.text().catch(() => "");
+        throw new Error(message || `HTTP ${response.status}`);
+      }
+      return response.json().catch(() => ({}));
+    },
+    [activeUserId],
+  );
+
   useEffect(() => {
     if (!activeUserId) return;
     void fetchWalletBalance();
@@ -1709,6 +1743,13 @@ const App: React.FC = () => {
         console.error("CHAT_REQUEST_FAILED", { reason: "scenario_send_without_connection" });
         return;
       }
+      const userId = activeUserId.trim();
+      const isAdminUser = userId.toLowerCase() === "admin";
+      const chatCost = getChatPointCost(selectedCard);
+      if (!isAdminUser && walletBalance !== null && walletBalance < chatCost.amount) {
+        setScenarioSendError("ポイントが不足しています。チャージ後に再度お試しください。");
+        return;
+      }
       const editorSummary = showScenarioModal ? scenarioEditorText.trim() : "";
       const fallbackSummary = scenario?.summary?.trim() ?? "";
       const finalSummary = editorSummary || fallbackSummary;
@@ -1764,7 +1805,17 @@ const App: React.FC = () => {
         ]);
         setScenarioToast("チャットに送信しました。物語を開始します。");
         setScenarioSendError(null);
-        void fetchWalletBalance();
+        if (!isAdminUser && chatCost.amount > 0) {
+          try {
+            const idempotencyKey = `scenario-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+            await consumeWalletPoints({ amount: chatCost.amount, sku: chatCost.sku, idempotencyKey });
+          } catch (consumeError) {
+            const message = consumeError instanceof Error ? consumeError.message : String(consumeError);
+            setScenarioSendError(`ポイント消費に失敗しました: ${message}`);
+            console.error("CHAT_REQUEST_FAILED", { reason: "wallet_consume_failed", error: consumeError });
+          }
+        }
+        await fetchWalletBalance();
         const updatedEntry: GeneratedScenario = scenario
           ? {
               ...scenario,
@@ -1817,6 +1868,7 @@ const App: React.FC = () => {
       }
     },
     [
+      activeUserId,
       cards,
       connectionStatus.state,
       listRef,
@@ -1827,6 +1879,9 @@ const App: React.FC = () => {
       selectedCard,
       showScenarioModal,
       temperature,
+      walletBalance,
+      consumeWalletPoints,
+      fetchWalletBalance,
     ],
   );
 
@@ -2190,6 +2245,15 @@ const App: React.FC = () => {
       console.error("CHAT_REQUEST_FAILED", { reason: "send_without_connection" });
       return;
     }
+    const userId = activeUserId.trim();
+    const isAdminUser = userId.toLowerCase() === "admin";
+    const chatCost = getChatPointCost(selectedCard);
+    if (!isAdminUser && walletBalance !== null && walletBalance < chatCost.amount) {
+      if (typeof window !== "undefined") {
+        window.alert("ポイントが不足しています。チャージするか、後でもう一度お試しください。");
+      }
+      return;
+    }
     const tempValue = Math.min(1, Math.max(0, Number(temperature) || 0.7));
     const activeCard =
       cards.find((card) => card.id === selectedCard) ||
@@ -2219,7 +2283,19 @@ const App: React.FC = () => {
         cardId: selectedCard,
         cardName: activeCard?.name,
       });
-      void fetchWalletBalance();
+      if (!isAdminUser && chatCost.amount > 0) {
+        try {
+          const idempotencyKey = `chat-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+          await consumeWalletPoints({ amount: chatCost.amount, sku: chatCost.sku, idempotencyKey });
+        } catch (consumeError) {
+          const message = consumeError instanceof Error ? consumeError.message : String(consumeError);
+          console.error("CHAT_REQUEST_FAILED", { reason: "wallet_consume_failed", error: consumeError });
+          if (typeof window !== "undefined") {
+            window.alert(`ポイント消費に失敗しました: ${message}`);
+          }
+        }
+      }
+      await fetchWalletBalance();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error("CHAT_REQUEST_FAILED", { reason: "send_failed", error: err });
