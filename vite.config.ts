@@ -5,7 +5,7 @@ import path from "node:path";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const apiBase = env.VITE_API_BASE || "http://localhost:4117";
-  const basePath = env.VITE_APP_BASE || "/";
+  const basePath = env.VITE_APP_BASE || "./";
   return {
     plugins: [react()],
     base: basePath,

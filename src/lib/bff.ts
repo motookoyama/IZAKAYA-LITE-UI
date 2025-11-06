@@ -13,6 +13,14 @@ export function resolveBffBase(): string {
   if (resolved) {
     return trimTrailingSlash(resolved.trim());
   }
+  if (typeof window !== "undefined" && window.location) {
+    const location = window.location;
+    const origin = location.origin.replace(/\/$/, "");
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      return "http://localhost:4117";
+    }
+    return origin;
+  }
   return "http://localhost:4117";
 }
 
