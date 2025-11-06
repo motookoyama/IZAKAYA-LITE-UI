@@ -3,25 +3,27 @@ let cachedHealthBase: string | null = null;
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
+const DEFAULT_PROD_BASE = "https://izakaya-verse-promo-95139013565.asia-northeast1.run.app";
+const DEFAULT_DEV_BASE = "http://localhost:4117";
+
 export function resolveBffBase(): string {
   const candidates = [
-    typeof import.meta.env.VITE_REACT_APP_BFF_URL === "string" ? import.meta.env.VITE_REACT_APP_BFF_URL : undefined,
-    typeof import.meta.env.VITE_BFF_URL === "string" ? import.meta.env.VITE_BFF_URL : undefined,
-    typeof import.meta.env.REACT_APP_BFF_URL === "string" ? import.meta.env.REACT_APP_BFF_URL : undefined,
-  ];
-  const resolved = candidates.find((entry) => entry && entry.trim().length > 0);
-  if (resolved) {
-    return trimTrailingSlash(resolved.trim());
+    import.meta.env.VITE_REACT_APP_BFF_URL,
+    import.meta.env.VITE_BFF_URL,
+    import.meta.env.REACT_APP_BFF_URL,
+  ].filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
+
+  if (candidates.length > 0) {
+    return trimTrailingSlash(candidates[0]);
   }
+
   if (typeof window !== "undefined" && window.location) {
-    const location = window.location;
-    const origin = location.origin.replace(/\/$/, "");
+    const origin = window.location.origin.replace(/\/+$/, "");
     if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
-      return "http://localhost:4117";
+      return DEFAULT_DEV_BASE;
     }
-    return origin;
   }
-  return "http://localhost:4117";
+  return DEFAULT_PROD_BASE;
 }
 
 export function clearCachedHealthUrl(): void {
