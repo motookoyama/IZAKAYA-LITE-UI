@@ -8,7 +8,8 @@ WORKDIR /app
 
 COPY package-lock.json package.json ./
 RUN npm install --no-audit --progress=false \
- && npm install --no-audit --progress=false --no-save --package-lock=false @rollup/rollup-linux-x64-gnu || true
+ && npm install --no-audit --progress=false --no-save --package-lock=false @rollup/rollup-linux-x64-gnu || true \
+ && npm install --no-audit --progress=false --no-save --package-lock=false @esbuild/linux-x64 || true
 
 COPY . .
 RUN npm run build
