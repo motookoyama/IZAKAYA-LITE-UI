@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/generate_version.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/generate_version.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
