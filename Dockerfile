@@ -6,7 +6,8 @@ ENV NODE_ENV=production \
 WORKDIR /app
 
 COPY package-lock.json package.json ./
-RUN npm install --no-audit --progress=false
+RUN npm install --no-audit --progress=false \
+ && npm install --no-audit --progress=false --no-save --package-lock=false @rollup/rollup-linux-x64-gnu
 
 COPY . .
 RUN npm run build
