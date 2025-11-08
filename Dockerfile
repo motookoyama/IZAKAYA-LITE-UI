@@ -6,7 +6,7 @@ ENV NODE_ENV=production \
 WORKDIR /app
 
 COPY package-lock.json package.json ./
-RUN npm ci --no-audit --progress=false
+RUN npm install --no-audit --progress=false
 
 COPY . .
 RUN npm run build
