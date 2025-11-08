@@ -2,12 +2,13 @@
 FROM node:20-slim AS builder
 
 ENV NODE_ENV=production \
-    SWC_SKIP_VALIDATION=1
+    SWC_SKIP_VALIDATION=1 \
+    NPM_CONFIG_OPTIONAL=true
 WORKDIR /app
 
 COPY package-lock.json package.json ./
 RUN npm install --no-audit --progress=false \
- && npm install --no-audit --progress=false --no-save --package-lock=false @rollup/rollup-linux-x64-gnu
+ && npm install --no-audit --progress=false --no-save --package-lock=false @rollup/rollup-linux-x64-gnu || true
 
 COPY . .
 RUN npm run build
