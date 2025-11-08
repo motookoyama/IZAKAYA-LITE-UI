@@ -1,8 +1,7 @@
 # Stage 1: Build optimized static assets
 FROM node:20-slim AS builder
 
-ENV NODE_ENV=production \
-    SWC_SKIP_VALIDATION=1 \
+ENV SWC_SKIP_VALIDATION=1 \
     NPM_CONFIG_OPTIONAL=true
 WORKDIR /app
 
@@ -12,7 +11,7 @@ RUN npm install --no-audit --progress=false \
  && npm install --no-audit --progress=false --no-save --package-lock=false @esbuild/linux-x64 || true
 
 COPY . .
-RUN npm run build
+RUN NODE_ENV=production npm run build
 
 # Stage 2: Serve via Nginx
 FROM nginx:1.27-alpine
