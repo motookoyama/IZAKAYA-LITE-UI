@@ -1,0 +1,12 @@
+{
+  "name": "izakaya-playability-job",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node /app/scripts/check_content_playability_full.js"
+  },
+  "dependencies": {
+    "playwright": "^1.48.2"
+  }
+}
