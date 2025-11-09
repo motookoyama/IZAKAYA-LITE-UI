@@ -12,7 +12,7 @@ let cachedHealthBase: string | null = null;
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
-const DEFAULT_PROD_BASE = "https://izakaya-verse-promo-95139013565.asia-northeast1.run.app";
+const DEFAULT_PROD_BASE = "https://izakaya-bff-95139013565.asia-northeast1.run.app";
 const DEFAULT_DEV_BASE = "http://localhost:4117";
 
 export function resolveBffBase(): string {
@@ -76,7 +76,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "node:path";
 
-const DEFAULT_PROD_API_BASE = "https://izakaya-verse-promo-95139013565.asia-northeast1.run.app";
+const DEFAULT_PROD_API_BASE = "https://izakaya-bff-95139013565.asia-northeast1.run.app";
 const DEFAULT_DEV_API_BASE = "http://localhost:4117";
 
 export default defineConfig(({ mode }) => {
@@ -164,7 +164,7 @@ cat <<'EOF' > "${ROOT_DIR}/docs/CODEX.md"
 ### ■ 本番環境
 常に Google Cloud Run の BFF を使用する：
 
-https://izakaya-verse-promo-95139013565.asia-northeast1.run.app
+https://izakaya-bff-95139013565.asia-northeast1.run.app
 
 `VITE_API_BASE` を上記 URL に固定し、公開ビルドでローカル BFF を参照させないこと。
 

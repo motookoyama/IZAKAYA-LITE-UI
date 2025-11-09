@@ -2,7 +2,7 @@
 
 # ========= 設定 =========
 UI_URL="https://izakaya-lite-ui-95139013565.asia-northeast1.run.app"
-BFF_URL="https://izakaya-verse-promo-95139013565.asia-northeast1.run.app"
+BFF_URL="https://izakaya-bff-95139013565.asia-northeast1.run.app"
 # UIがBFFと通信できるAPI（※UI内でBFFを叩く部分に合わせて修正可）
 CHECK_API="$UI_URL/chat/health"
 

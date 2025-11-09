@@ -11,7 +11,7 @@ function resolveBffBaseUrl(): string {
     (import.meta.env.VITE_REACT_APP_BFF_URL as string | undefined) ||
     (import.meta.env.VITE_BFF_URL as string | undefined) ||
     (import.meta.env.REACT_APP_BFF_URL as string | undefined);
-  const fallback = "http://localhost:4117";
+  const fallback = "https://izakaya-bff-95139013565.asia-northeast1.run.app";
   const selected = typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : fallback;
   return selected.replace(/\/+$/, "");
 }

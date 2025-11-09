@@ -3,7 +3,7 @@ let cachedHealthBase: string | null = null;
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
-const DEFAULT_PROD_BASE = "https://izakaya-verse-promo-95139013565.asia-northeast1.run.app";
+const DEFAULT_PROD_BASE = "https://izakaya-bff-95139013565.asia-northeast1.run.app";
 const DEFAULT_DEV_BASE = "http://localhost:4117";
 
 export function resolveBffBase(): string {
