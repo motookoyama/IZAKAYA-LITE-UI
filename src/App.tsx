@@ -410,13 +410,29 @@ function getChatPointCost(cardId: string) {
   return CHAT_POINT_CONFIG[cardId] ?? DEFAULT_CHAT_POINT;
 }
 
-function buildRequestUrl(path: string, baseOverride?: string): string {
-  if (/^https?:\/\//i.test(path)) {
-    return path;
+function ensureChatProviderQuery(url: string): string {
+  try {
+    const target = new URL(url);
+    if (!target.pathname.startsWith("/chat")) {
+      return url;
+    }
+    target.searchParams.set("provider", "gemini");
+    return target.toString();
+  } catch {
+    return url;
   }
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const base = baseOverride ? normalizeBase(baseOverride) : getResolvedBffBase();
-  return `${base}${normalizedPath}`;
+}
+
+function buildRequestUrl(path: string, baseOverride?: string): string {
+  const resolvedUrl = (() => {
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    const base = baseOverride ? normalizeBase(baseOverride) : getResolvedBffBase();
+    return `${base}${normalizedPath}`;
+  })();
+  return ensureChatProviderQuery(resolvedUrl);
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
