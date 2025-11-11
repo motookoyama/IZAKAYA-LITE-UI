@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminBillingPanel from "./components/AdminBillingPanel";
+import LlmGatewayPanel from "./components/LlmGatewayPanel";
 import drOrbAvatar from "./assets/dr-orb.png";
 import missMadiAvatar from "./assets/miss-madi.png";
 import { clearCachedHealthUrl, getHealthUrl, resolveBffBase } from "./lib/bff";
@@ -2686,6 +2687,8 @@ const App: React.FC = () => {
             />
           </>
         )}
+
+        <LlmGatewayPanel />
 
         <section className={`relative rounded-3xl ${themeClasses.panel} shadow-xl`}>
           <div ref={listRef} className="h-[52vh] space-y-4 overflow-y-auto px-6 py-6">
