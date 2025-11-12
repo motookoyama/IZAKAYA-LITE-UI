@@ -569,6 +569,23 @@ const PROVIDER_OPTIONS: ProviderOption[] = [
 ];
 
 const ADMIN_STORAGE_KEY = "IZK_ADMIN_MODE";
+const ADMIN_QUERY_PARAM = "admin";
+const ADMIN_QUERY_VALUE = "1";
+
+const resolveAdminFeatureFlag = (envFlag: boolean): boolean => {
+  if (typeof window === "undefined") {
+    return envFlag;
+  }
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(ADMIN_QUERY_PARAM) === ADMIN_QUERY_VALUE) {
+      return true;
+    }
+  } catch {
+    // ignore query parse failures
+  }
+  return envFlag;
+};
 const HealthBadge: React.FC<{ health?: HealthStatus; loading: boolean; error?: string }> = ({
   health,
   loading,
@@ -1076,37 +1093,56 @@ const CardDock: React.FC<{
   onDropFiles: (files: FileList | null) => void;
   onRemove: (id: string) => void;
   themeClasses: ThemeClasses;
-}> = ({ cards, selectedId, onSelect, onRegisterClick, onCreateScenario, onDropFiles, onRemove, themeClasses }) => {
+  enableManagement: boolean;
+}> = ({
+  cards,
+  selectedId,
+  onSelect,
+  onRegisterClick,
+  onCreateScenario,
+  onDropFiles,
+  onRemove,
+  themeClasses,
+  enableManagement,
+}) => {
   const handleDrop: React.DragEventHandler<HTMLDivElement> = (event) => {
+    if (!enableManagement) return;
     event.preventDefault();
     onDropFiles(event.dataTransfer.files);
   };
 
-  const handleDragOver: React.DragEventHandler<HTMLDivElement> = (event) => event.preventDefault();
+  const handleDragOver: React.DragEventHandler<HTMLDivElement> = (event) => {
+    if (!enableManagement) return;
+    event.preventDefault();
+  };
 
   return (
     <section
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       className={`rounded-2xl ${themeClasses.panel} p-4 shadow-sm`}
-      title="PNG(400x600)をドロップしてカードを追加"
+      title={
+        enableManagement ? "PNG(400x600)をドロップしてカードを追加" : undefined
+      }
     >
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className={`text-[11px] uppercase tracking-wide ${themeClasses.dockLabel}`}>Card Dock</div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onCreateScenario}
-            className="rounded-full border border-rose-200 px-3 py-1 text-xs font-medium text-rose-500 hover:border-rose-500 hover:text-rose-600"
-          >
-            ✦ シナリオ作成
-          </button>
-          <button
-            onClick={onRegisterClick}
-            className="rounded-full border border-dashed border-rose-300 px-3 py-1 text-xs font-medium text-rose-500 hover:border-rose-500 hover:text-rose-600"
-          >
-            ＋ カード登録
-          </button>
-        </div>
+        {enableManagement && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onCreateScenario}
+              className="rounded-full border border-rose-200 px-3 py-1 text-xs font-medium text-rose-500 hover:border-rose-500 hover:text-rose-600"
+            >
+              ✦ シナリオ作成
+            </button>
+            <button
+              onClick={onRegisterClick}
+              className="rounded-full border border-dashed border-rose-300 px-3 py-1 text-xs font-medium text-rose-500 hover:border-rose-500 hover:text-rose-600"
+            >
+              ＋ カード登録
+            </button>
+          </div>
+        )}
       </div>
       <div className="flex gap-3 overflow-x-auto pb-1">
         {cards.map((card) => {
@@ -1137,7 +1173,7 @@ const CardDock: React.FC<{
                         featured
                       </span>
                     )}
-                    {card.kind === "custom" && (
+                    {card.kind === "custom" && enableManagement && (
                       <button
                         type="button"
                         className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-sm font-semibold text-white hover:bg-black/80"
@@ -1206,6 +1242,12 @@ const PayPalGrid: React.FC = () => (
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>("light");
+  const isDevEnv = import.meta.env.DEV;
+  const isAdminEnvFlag =
+    typeof import.meta.env.VITE_ADMIN_MODE === "string"
+      ? import.meta.env.VITE_ADMIN_MODE === "true"
+      : false;
+  const [adminFeaturesEnabled] = useState(() => resolveAdminFeatureFlag(isAdminEnvFlag));
   const bffCandidates = useMemo(() => BFF_CANDIDATES, []);
   const themeClasses = useMemo(() => THEME_MAP[theme], [theme]);
 
@@ -1220,6 +1262,7 @@ const App: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [adminMode, setAdminMode] = useState(() => {
     if (typeof window === "undefined") return false;
+    if (!resolveAdminFeatureFlag(isAdminEnvFlag)) return false;
     return localStorage.getItem(ADMIN_STORAGE_KEY) === "true";
   });
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -1330,12 +1373,7 @@ const App: React.FC = () => {
   const [scenarioSendError, setScenarioSendError] = useState<string | null>(null);
   const [scenarioEditorText, setScenarioEditorText] = useState("");
   const [scenarioManualMode, setScenarioManualMode] = useState(false);
-  const isDevEnv = import.meta.env.DEV;
-  const isAdminEnvFlag =
-    typeof import.meta.env.VITE_ADMIN_MODE === "string"
-      ? import.meta.env.VITE_ADMIN_MODE === "true"
-      : false;
-  const showAdminHealthWarnings = isDevEnv || isAdminEnvFlag || adminMode;
+  const showAdminHealthWarnings = isDevEnv || isAdminEnvFlag || adminMode || adminFeaturesEnabled;
 
   const listRef = useRef<HTMLDivElement>(null);
   const hiddenFileInputRef = useRef<HTMLInputElement>(null);
@@ -2409,6 +2447,9 @@ const App: React.FC = () => {
   };
 
   const handleAdminButtonClick = async () => {
+    if (!adminFeaturesEnabled) {
+      return;
+    }
     if (!adminMode) {
       const input = window.prompt("管理パスワードを入力してください");
       if (input === null) return;
@@ -2568,10 +2609,10 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (adminMode && showAdminPanel) {
+    if (adminFeaturesEnabled && adminMode && showAdminPanel) {
       fetchProviderConfig();
     }
-  }, [adminMode, showAdminPanel, fetchProviderConfig]);
+  }, [adminFeaturesEnabled, adminMode, showAdminPanel, fetchProviderConfig]);
 
   useEffect(() => {
     return () => {
@@ -2590,11 +2631,11 @@ const App: React.FC = () => {
           <div className="flex flex-col">
             <h1 className={themeClasses.title}>IZAKAYA verse – Lite Preview</h1>
             <div className={`text-sm font-medium ${themeClasses.textSubtle}`}>
-              Mini BFF /chat 接続テストパネル
+              {adminFeaturesEnabled ? "Mini BFF /chat 接続テストパネル" : "AIチャットエクスペリエンス"}
             </div>
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-3 text-sm">
-            <ConnectionStatusPill status={connectionStatus} />
+            {adminFeaturesEnabled && <ConnectionStatusPill status={connectionStatus} />}
             {walletBalance !== null ? (
               <span className="text-xs font-medium text-rose-500 dark:text-rose-300">残り {walletBalance} pt</span>
             ) : walletLoading ? (
@@ -2625,12 +2666,14 @@ const App: React.FC = () => {
             >
               ポイント表示
             </button>
-            <button
-              onClick={handleAdminButtonClick}
-              className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-600 hover:border-purple-400 hover:text-purple-500 dark:border-zinc-700 dark:text-zinc-200 dark:hover:border-purple-400 dark:hover:text-purple-300"
-            >
-              {adminMode ? (showAdminPanel ? "管理を閉じる" : "管理") : "管理"}
-            </button>
+            {adminFeaturesEnabled && (
+              <button
+                onClick={handleAdminButtonClick}
+                className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-600 hover:border-purple-400 hover:text-purple-500 dark:border-zinc-700 dark:text-zinc-200 dark:hover:border-purple-400 dark:hover:text-purple-300"
+              >
+                {adminMode ? (showAdminPanel ? "管理を閉じる" : "管理") : "管理"}
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -2651,7 +2694,7 @@ const App: React.FC = () => {
             )}
           </div>
         )}
-        {adminMode && showAdminPanel && (
+        {adminFeaturesEnabled && adminMode && showAdminPanel && (
           <>
             <AdminBillingPanel />
             <AdminPanel
@@ -2688,7 +2731,7 @@ const App: React.FC = () => {
           </>
         )}
 
-        <LlmGatewayPanel />
+        {adminFeaturesEnabled && <LlmGatewayPanel />}
 
         <section className={`relative rounded-3xl ${themeClasses.panel} shadow-xl`}>
           <div ref={listRef} className="h-[52vh] space-y-4 overflow-y-auto px-6 py-6">
@@ -2758,6 +2801,7 @@ const App: React.FC = () => {
           onDropFiles={handleFilesToCards}
           onRemove={handleRemoveCard}
           themeClasses={themeClasses}
+          enableManagement={adminFeaturesEnabled}
         />
 
         <input
